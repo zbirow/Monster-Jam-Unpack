@@ -47,3 +47,11 @@ Hex `21 43 4D 50 B3 00 00 00 78 9C 0B 49 AD 28 29 2D`
 | ident. | meta | zlib header | zlib Data |
 | ------ | ---- | ----------- | ----- |
 | 21 43 4D 50 | np. B3 00 00 00 | 78 9C | np. 0B 49 AD 28 29 2D... |
+
+
+# Info!!!
+
+#### The file contains many of the same files. This is because the game loads a given amount of blocks from one location to load them as quickly as possible. Instead of looking for each file separately, it takes the location of the starting block and takes a given amount of them.
+
+
+
