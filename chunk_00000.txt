@@ -1,0 +1,51 @@
+//--------------------------------------------------------------------------------------
+// Note:
+//	* Friction affects sideways drift of vehicle plus acceleration & braking - default 1.0
+//	* Restitution describes how "bouncy" a surface is - default 0.5
+//	* Resistance slows down the vehicle when on this surface (eg. increase for deep mud to slow vehicle) - default 0.0
+//	* GePri is game event priority - higher is more important
+//--------------------------------------------------------------------------------------
+//File format:
+//
+//MaterialId	Name					Friction	Wheel Friction	Restitution	Bumpyness	Damping		TyreSkid		TyreTread	GeMaterial	GePri
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+0				"DEFAULT"				3.0			1.0				0.5			0.05		1.0			"DIRTSKID"		""			"default"	0
+1				"INVISIBLEWALL"			0.0			0.0				0.5			0.0			0.0			""				""			"default"	0
+2				"GRATING"				3.0			1.0				0.5			0.3			1.0			""				""			"default"	0
+3				"FLESH"					3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+4				"PAPER"					1.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+5				"CARDBOARD"				3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+6				"CERAMIC"				3.0			1.2				0.5			0.0			1.0			""				""			"default"	0
+7				"WOOD"					3.0			1.2				0.5			0.3			1.0			"DIRTSKID"		""			"wood"		9
+8				"GRASS"					2.8			0.8				0.5			0.2			1.2			"DIRTSKID"		"DIRTTREAD"	"grass"		5
+9				"LILYPAD"				2.8			0.8				0.5			0.0			1.2			""				""			"default"	0
+10				"PLASTER"				3.0			1.2				0.5			0.0			1.0			""				""			"default"	0
+11				"CONCRETE"				3.0			1.2				0.5			0.0			1.0			"RUBBERSKID"	""			"road"		1
+12				"BRICK"					3.0			1.2				0.5			0.0			1.0			"RUBBERSKID"	""			"brick"		3
+13				"STONE"					5.2			2.2				0.5			0.0			1.0			"RUBBERSKID"	""			"rock"		8
+14				"THIN_METAL"			3.0			1.0				0.5			0.0			1.0			"RUBBERSKID"	""			"metal"		10
+15				"THICK_METAL"			3.0			1.0				0.5			0.0			1.0			"RUBBERSKID"	""			"metal"		10
+16				"SAND"					3.9			1.9				0.5			0.1			1.2			"DIRTSKID"		"DIRTTREAD"	"sand"		7
+17				"DIRT"					5.0			2.0				0.5			0.2			1.0			"DIRTSKID"		"DIRTTREAD"	"dirt"		6
+18				"GRAVEL"				5.0			2.0				0.5			0.2			1.0			"DIRTSKID"		"DIRTTREAD"	"gravel"	4
+19				"CLOTH"					3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+20				"CARPET"				3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+21				"PLASTIC"				3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+22				"GLASS"					3.0			1.0				0.5			0.0			1.0			""				""			"default"	0
+23				"SNOW"					2.8			0.8				0.5			0.0			4.0			""				""			"default"	0
+24				"ICE"					2.5			0.5				0.5			0.0			5.0			"DIRTSKID"		""			"default"	0
+25				"SLIME"					3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+26				"WATER"					3.0			1.0				0.5			0.0			1.0			""				""			"water"		12
+27				"WATERPIPE"				3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+28				"STEAMPIPE"				3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+29				"RAZORWIRE"				3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+30				"NOTHING"				3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+31				"SOUNDOCCLUDER"			3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+32				"PERCEPTIONOCCLUDER"	3.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+33				"MOVEABLEMETAL"			3.0			1.2				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+34				"ICEROAD"				0.6			0.6				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+35				"MUD"					3.8			1.8				0.3			0.3			1.2			"DIRTSKID"		"DIRTTREAD"	"mud"		11
+36				"BOOST"					1.0			1.0				0.5			0.0			1.0			"DIRTSKID"		""			"default"	0
+37				"HAIRPIN"				1.9			1.9				0.3			0.0			1.2			"DIRTSKID"		""			"leaves"	5
+38				"LAVA"					0.0			0.0				0.5			0.0			1.0			""				""			"default"	0
+
