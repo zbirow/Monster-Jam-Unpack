@@ -2,101 +2,140 @@ import os
 import zlib
 
 # --- Konfiguracja ---
-# Nazwy plików i katalogów (bez ścieżek)
-INPUT_FILE_NAME = 'Packfile.dat'
-OUTPUT_DIR_NAME = 'unpacked_files'
+INPUT_FILE = 'Packfile.dat'
+OUTPUT_DIR = 'export'
 
-# --- Stałe binarne ---
-# Znacznik !CMP -> 21 43 4D 50
+# --- Znaczniki, których będziemy szukać ---
 CMP_MARKER = b'\x21\x43\x4D\x50'
-# Standardowy nagłówek kompresji zlib (DEFLATE)
-ZLIB_MARKER = b'\x78\x9c'
+PNG_HEADER = b'\x89\x50\x4E\x47'
+ZLIB_START_OFFSET_IN_BLOCK = 8 # zlib stream zaczyna się 8 bajtów po '!CMP'
 
+# ======================= EDYTOWALNA TABELA NAGŁÓWKÓW =======================
+# Tutaj mapujesz nagłówek (w formacie binarnym) na rozszerzenie pliku.
+# Możesz dodawać własne wpisy. Klucz to bajty, wartość to rozszerzenie.
+HEADER_TO_EXTENSION_MAP = {
+    b'DDS ': '.dds',           # Standardowy nagłówek DDS (ze spacją na końcu)
+    b'\x50\x02\x00': '.hnk',            # Nagłówek dla HNK
+    b'Texture': '.files',  
+    b'\x06\x00\x00': '.dxm',          # Nagłówek dla DMX
+    b'\xED\x09\x00': '.wcol',
+    b'TSEC': '.lsb',                  # Nagłówek dla LSB
+}
+# ===========================================================================
 
-def unpack_files():
+def find_all_markers(data, marker):
+    """Pomocnicza funkcja do znajdowania wszystkich wystąpień znacznika."""
+    positions = []
+    pos = data.find(marker, 0)
+    while pos != -1:
+        positions.append(pos)
+        pos = data.find(marker, pos + 1)
+    return positions
+
+def get_extension_from_data(decompressed_data):
     """
-    Główna funkcja do rozpakowywania plików z archiwum .dat.
-    Wszystkie operacje plikowe odbywają się w katalogu, w którym znajduje się skrypt.
+    Sprawdza pierwsze bajty rozpakowanych danych i zwraca odpowiednie rozszerzenie
+    na podstawie tabeli HEADER_TO_EXTENSION_MAP.
     """
+    for header, extension in HEADER_TO_EXTENSION_MAP.items():
+        if decompressed_data.startswith(header):
+            return extension
+            
+    # Jeśli żaden nagłówek nie pasuje, sprawdź czy to plik tekstowy
     try:
-        # Krok 1: Ustalenie, gdzie znajduje się ten skrypt
-        # __file__ to specjalna zmienna Pythona przechowująca ścieżkę do bieżącego pliku .py
+        sample = decompressed_data[:128].decode('ascii')
+        if all(c.isprintable() or c.isspace() for c in sample if c != '\x00'):
+            return '.txt'
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    # Domyślne rozszerzenie, jeśli nic nie pasuje
+    return '.path'
+
+def bruteforce_export_by_markers_skip_first():
+    """
+    Skanuje plik, znajduje bloki !CMP i PNG, pomija pierwszy,
+    a resztę rozpakowuje i identyfikuje na podstawie tabeli nagłówków.
+    """
+    print(f"--- Siłowy eksport do folderu '{OUTPUT_DIR}' (z tabelą nagłówków) ---")
+    
+    # Niezawodne ścieżki
+    try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
     except NameError:
-        # Jeśli skrypt jest uruchamiany w środowisku, gdzie __file__ nie jest zdefiniowane
-        # (np. interaktywna konsola), używamy bieżącego katalogu roboczego.
         script_dir = os.getcwd()
-
-    # Krok 2: Zbudowanie pełnych ścieżek na podstawie lokalizacji skryptu
-    # os.path.join() inteligentnie łączy ścieżki, działając na każdym systemie (Windows/Linux/macOS)
-    input_file_path = os.path.join(script_dir, INPUT_FILE_NAME)
-    output_dir_path = os.path.join(script_dir, OUTPUT_DIR_NAME)
-
-    # Sprawdzenie, czy plik wejściowy istnieje w tej lokalizacji
-    if not os.path.exists(input_file_path):
-        print(f"Błąd: Plik '{input_file_path}' nie został znaleziony!")
-        print("Upewnij się, że plik 'Packfile.dat' jest w tym samym katalogu co skrypt.")
-        return
-
-    # Utworzenie katalogu na wypakowane pliki w tej lokalizacji
+    input_path = os.path.join(script_dir, INPUT_FILE)
+    output_dir_path = os.path.join(script_dir, OUTPUT_DIR)
     os.makedirs(output_dir_path, exist_ok=True)
-    print(f"Skrypt działa w katalogu: '{script_dir}'")
-    print(f"Pliki będą zapisywane w: '{output_dir_path}'")
-
-    # Otwarcie pliku .dat w trybie odczytu binarnego ('rb')
-    with open(input_file_path, 'rb') as f:
-        data = f.read()
-
-    # Inicjalizacja zmiennych do pętli
-    start_pos = 0
-    file_index = 0
     
-    # Pętla do znajdowania wszystkich wystąpień znacznika !CMP
-    while True:
-        current_cmp_pos = data.find(CMP_MARKER, start_pos)
-        if current_cmp_pos == -1:
-            break
-
-        next_cmp_pos = data.find(CMP_MARKER, current_cmp_pos + len(CMP_MARKER))
-
-        if next_cmp_pos == -1:
-            file_block = data[current_cmp_pos:]
-        else:
-            file_block = data[current_cmp_pos:next_cmp_pos]
+    try:
+        with open(input_path, 'rb') as f:
+            data = f.read()
+    except Exception as e:
+        print(f"BŁĄD: Nie można otworzyć pliku wejściowego! {e}")
+        return
         
-        zlib_start_in_block = file_block.find(ZLIB_MARKER)
+    # Krok 1: Znajdź i posortuj wszystkie bloki
+    print("Skanowanie pliku w poszukiwaniu znaczników !CMP i PNG...")
+    cmp_positions = find_all_markers(data, CMP_MARKER)
+    png_positions = find_all_markers(data, PNG_HEADER)
+    
+    all_chunks = []
+    for pos in cmp_positions:
+        all_chunks.append({'offset': pos, 'type': 'CMP'})
+    for pos in png_positions:
+        all_chunks.append({'offset': pos, 'type': 'PNG'})
+    all_chunks.sort(key=lambda x: x['offset'])
+    
+    if not all_chunks:
+        print("Nie znaleziono żadnych bloków danych.")
+        return
+        
+    print(f"Znaleziono łącznie {len(all_chunks)} bloków danych.")
+    print(f"Celowo pomijam pierwszy blok znaleziony na pozycji {hex(all_chunks[0]['offset'])}.")
 
-        if zlib_start_in_block != -1:
-            metadata = file_block[len(CMP_MARKER):zlib_start_in_block]
-            compressed_data = file_block[zlib_start_in_block:]
-            
-            print(f"\n--- Przetwarzanie pliku #{file_index} ---")
-            print(f"Znaleziono blok na pozycji: {hex(current_cmp_pos)}")
-            print(f"Metadane (hex): {metadata.hex(' ')}")
-            
+    # Krok 2: Przetwarzanie bloków, pomijając pierwszy
+    for i in range(1, len(all_chunks)):
+        chunk = all_chunks[i]
+        offset = chunk['offset']
+        chunk_type = chunk['type']
+        
+        is_last_chunk = (i + 1) == len(all_chunks)
+        end_offset = len(data) if is_last_chunk else all_chunks[i+1]['offset']
+        
+        raw_chunk = data[offset:end_offset]
+        
+        output_data = None
+        extension = ".dat"
+        
+        print(f"\nPrzetwarzanie chunk_{i} (Typ: {chunk_type}, Offset: {hex(offset)})...")
+        
+        if chunk_type == 'CMP':
+            zlib_stream = raw_chunk[ZLIB_START_OFFSET_IN_BLOCK:]
             try:
-                decompressed_data = zlib.decompress(compressed_data)
-                
-                # Budowanie pełnej ścieżki do pliku wyjściowego
-                output_filename = os.path.join(output_dir_path, f'unpacked_{file_index}.dat')
-                with open(output_filename, 'wb') as out_f:
-                    out_f.write(decompressed_data)
-                
-                print(f"Sukces! Zapisano do: '{output_filename}'")
-                print(f"Rozmiar skompresowany: {len(compressed_data)} B, Rozmiar po dekompresji: {len(decompressed_data)} B")
-
+                output_data = zlib.decompress(zlib_stream)
+                # Identyfikacja na podstawie tabeli
+                extension = get_extension_from_data(output_data)
             except zlib.error as e:
-                print(f"Błąd dekompresji zlib dla pliku #{file_index}: {e}")
-
-        else:
-            print(f"\nOstrzeżenie: W bloku na pozycji {hex(current_cmp_pos)} nie znaleziono nagłówka zlib (78 9C).")
-
-        start_pos = next_cmp_pos
-        file_index += 1
+                print(f"  Ostrzeżenie: Błąd dekompresji. Zapisuję surowy blok. Błąd: {e}")
+                output_data = raw_chunk
+                extension = ".cmp.error"
         
-    print(f"\nZakończono przetwarzanie. Znaleziono i przetworzono {file_index} bloków.")
+        elif chunk_type == 'PNG':
+            output_data = raw_chunk
+            extension = ".png"
+            
+        if output_data:
+            output_filename = f"chunk_{i}{extension}"
+            output_filepath = os.path.join(output_dir_path, output_filename)
+            try:
+                with open(output_filepath, 'wb') as out_f:
+                    out_f.write(output_data)
+                print(f"  Sukces! Zapisano do '{output_filepath}' (Rozmiar: {len(output_data)} bajtów)")
+            except OSError as e:
+                print(f"  Błąd zapisu pliku '{output_filepath}': {e}")
+                
+    print(f"\nSukces! Zakończono eksport.")
 
-
-# Uruchomienie głównej funkcji
 if __name__ == "__main__":
-    unpack_files()
+    bruteforce_export_by_markers_skip_first()
