@@ -9,7 +9,7 @@
 | 0x00 | 0x100 | Folders |
 | 0x110 | 14CB0 | Files Name |
 | 0x14CC0 | 0x1F1C0 | Meta |
-| 1F200 | END | Files Data |
+| 0x1F200 | END | Files Data |
 
 ### Header
 Hex `50 41 4B 00 C8 F1 01 00 0C 00 00 00` - First 12 bytes
