@@ -36,7 +36,7 @@ Hex `00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 6D 61 74 61 74 74 72 2E 
  
 Hex `21 43 4D 50 B3 00 00 00 78 9C 0B 49 AD 28 29 2D`
 
-| ident. | meta | zlib header | zlib Data |
+| ident. | Size | zlib header | zlib Data |
 | ------ | ---- | ----------- | ----- |
 | 21 43 4D 50 | np. B3 00 00 00 | 78 9C | np. 0B 49 AD 28 29 2D... |
 
