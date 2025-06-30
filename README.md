@@ -8,7 +8,7 @@
 | 0x0 | 0x0 | Header |
 | 0x00 | 0x100 | Folders |
 | 0x110 | 14CB0 | Files Name |
-| 0x14CC0 | 0x1F1C0 | Index |
+| 0x14CC0 | 0x1F1C0 | Meta |
 | 1F200 | END | Files Data |
 
 ### Header
@@ -28,7 +28,7 @@ Hex `00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 6D 61 74 61 74 74 72 2E 
 | ---- | --------- |
 | 00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 | matattr.txt |
 
-### Index
+### Meta
 ------
 
 
