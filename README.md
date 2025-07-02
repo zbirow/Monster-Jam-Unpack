@@ -1,6 +1,14 @@
 # Monster-Jam-Unpack
 * Documentation is in development. Not all information may be correct!!
 
+* I know how this file works, I already know how to handle file names during export, and to export only one file without duplicates.
+
+* I also know how to pack the data correctly.
+
+* When I have time, I will write the correct tools, but it may take some time.
+
+* Currently, I do not know how to assign directories
+
 
 ## Structures
 
