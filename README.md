@@ -16,7 +16,7 @@
 Hex `50 41 4B 00 C8 F1 01 00 0C 00 00 00` - First 12 bytes
 
 ### Folders
-Hex `28 00 00 00 0C 01 00 00 70 63 2F 67 6C 6F 62 61 6C 73 2F 70 68 79 73 69 63 73`
+Hex `28 00 00 00 0C 01 00 00` `70 63 2F 67 6C 6F 62 61 6C 73 2F 70 68 79 73 69 63 73`
 
 | Meta | Folder Name |
 | ---- | --------- |
@@ -31,7 +31,7 @@ Hex `00 00 00 00 00 E6 03 00 00 ` `17 00 00 00 ` `C0 4C 01 00 ` `6D 61 74 61 74 
 
 ### index
 - Each 4-byte entry is a uint32_t (little-endian) representing an file offset.
-`C0 F2 77 1C 40 25 3C 1D 40 25 44 1E 80 A7 5C 1F`
+`C0 F2 77 1C` `40 25 3C 1D` `40 25 44 1E` `80 A7 5C 1F`
 
 | Hex | Addres (h) |
 | --- | ------ |
@@ -43,7 +43,7 @@ Hex `00 00 00 00 00 E6 03 00 00 ` `17 00 00 00 ` `C0 4C 01 00 ` `6D 61 74 61 74 
 
 ### Files Data
  
-Hex `21 43 4D 50 B3 00 00 00 78 9C 0B 49 AD 28 29 2D` - CMP
+Hex `21 43 4D 50` `B3 00 00 00` `78 9C` `0B 49 AD 28 29 2D` - !CMP
 Hex2 `89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52` - PNG
 
 | ident. | Size | zlib header | zlib Data |
