@@ -44,6 +44,7 @@ Hex `00 00 00 00 00 E6 03 00 00 ` `17 00 00 00 ` `C0 4C 01 00 ` `6D 61 74 61 74 
 ### Files Data
  
 Hex `21 43 4D 50` `B3 00 00 00` `78 9C` `0B 49 AD 28 29 2D` - !CMP
+
 Hex2 `89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52` - PNG
 
 | ident. | Size | zlib header | zlib Data |
