@@ -27,7 +27,7 @@ Hex `00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 6D 61 74 61 74 74 72 2E 
 
 | Meta | Amount | Index Adress | File Name |
 | ---- | ------ | --------- | ------------ |
-| 00 00 00 00 00 E6 03 00 00 | 23 | 00 00 00 | 014CC0 | matattr.txt |
+| 00 00 00 00 00 E6 03 00 | 00 23 | 00 00 00 014CC0 | matattr.txt |
 
 ### index
 - Each 4-byte entry is a uint32_t (little-endian) representing an file offset.
