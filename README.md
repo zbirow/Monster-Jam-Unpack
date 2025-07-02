@@ -30,7 +30,15 @@ Hex `00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 6D 61 74 61 74 74 72 2E 
 | 00 00 00 00 00 E6 03 00 00 17 00 00 00 C0 4C 01 00 | matattr.txt |
 
 ### index
--first 4 bytes is addres to files. another 12 bytes is meta
+- Each 4-byte entry is a uint32_t (little-endian) representing an file offset.
+`C0 F2 77 1C 40 25 3C 1D 40 25 44 1E 80 A7 5C 1F`
+
+| Hex | Addres (h) |
+| --- | ------ |
+| C0 F2 77 1C | 1C77F2C0 |
+| 40 25 3C 1D | 1D3C2540 |
+| 40 25 44 1E | 1E442540 |
+| 80 A7 5C 1F | 1F5CA780 |
 
 
 ### Files Data
