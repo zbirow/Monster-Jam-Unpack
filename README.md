@@ -7,7 +7,7 @@
 
 * When I have time, I will write the correct tools, but it may take some time.
 
-* Currently, I do not know how to assign directories
+* I know how to assign directories
 
 
 ## Structures
