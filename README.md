@@ -49,7 +49,7 @@ Hex: 28 00 00 00 0C 01 00 00 70 63 2F...
 This is the main "logical" file manifest, structured as a linked list.
 Structure: A list of variable-length entries. Each entry consists of 16 bytes of metadata followed by a null-terminated file name string.
 
-hex:  6D 61 74 61 74 74 72 2E 74 78 74 00
+Hex:  6D 61 74 61 74 74 72 2E 74 78 74 00
 
 | Offset |	Size |	Data Type	| Description |
 | ------ | ---- | --------- | ----------- |
