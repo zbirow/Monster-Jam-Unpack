@@ -56,7 +56,7 @@ Hex:  6D 61 74 61 74 74 72 2E 74 78 74 00
 | 0x00	| 4	| uint32_t	| Pointer to Next File. An absolute file offset pointing to the next file entry within the same folder. A value of 0 signifies the end of the list for that directory, implementing a linked list structure. |
 | 0x04	| 4	| uint32_t	| Total Original Size. The total, final size in bytes of the asset after all its constituent data chunks have been processed (e.g., decompressed) and concatenated. |
 | 0x08	| 4	| uint32_t	| This integer specifies how many consecutive entries in the Pointer Table belong to this file. |
-| 0x0C	| 4	| uint32_t	| Start Index in Pointer Table. This is the zero-based index (e.g., 0, 1, 17, 550) that specifies which entry in the Pointer Table is the first one associated with this file. |
+| 0x0C	| 4	| uint32_t	| Start Index in Pointer Table. This is the zero-based index (e.g., 1, 1, 17, 23) that specifies which entry in the Pointer Table is the first one associated with this file. |
 | 0x10	| ?	| char[]	| File Name. A null-terminated string containing the full, virtual path of the file. |
 
 
