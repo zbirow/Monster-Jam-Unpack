@@ -2,6 +2,9 @@
 # File Format Documentation
 This document describes the structure of the .dat archive files used in the game. The format is a custom container, referred to internally as "PAK", designed for efficient asset loading.
 
+## Use
+- Place the script in the same directory as the Packfile.dat file and run it
+- ``python unpack.py``
 ## Overall Structure
 The archive is composed of a single, continuous header section followed by a "heap" of data chunks. The header contains all the necessary metadata to locate and interpret the data chunks.
 Section	Start Address	End Address	Description
