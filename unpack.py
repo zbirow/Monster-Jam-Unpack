@@ -1,141 +1,147 @@
 import os
 import zlib
+import struct
 
-# --- Konfiguracja ---
+
+# --- Configuration ---
 INPUT_FILE = 'Packfile.dat'
-OUTPUT_DIR = 'export'
+OUTPUT_DIR = 'unpacked_FINAL'
 
-# --- Znaczniki, których będziemy szukać ---
+# --- Constants ---
+DIRECTORY_TABLE_START = 12
+POINTER_TABLE_START = 0x14CC0
+POINTER_TABLE_ENTRIES = 10560
+POINTER_SIZE = 4
+
 CMP_MARKER = b'\x21\x43\x4D\x50'
 PNG_HEADER = b'\x89\x50\x4E\x47'
-ZLIB_START_OFFSET_IN_BLOCK = 8 # zlib stream zaczyna się 8 bajtów po '!CMP'
+ZLIB_START_OFFSET_IN_BLOCK = 8
 
-# ======================= EDYTOWALNA TABELA NAGŁÓWKÓW =======================
-# Tutaj mapujesz nagłówek (w formacie binarnym) na rozszerzenie pliku.
-# Możesz dodawać własne wpisy. Klucz to bajty, wartość to rozszerzenie.
-HEADER_TO_EXTENSION_MAP = {
-    b'DDS ': '.dds',           # Standardowy nagłówek DDS (ze spacją na końcu)
-    b'\x50\x02\x00': '.hnk',            # Nagłówek dla HNK
-    b'Texture': '.files',  
-    b'\x06\x00\x00': '.dxm',          # Nagłówek dla DMX
-    b'\xED\x09\x00': '.wcol',
-    b'TSEC': '.lsb',                  # Nagłówek dla LSB
-}
-# ===========================================================================
+def parse_pointer_table(data):
+    """Phase 1: Loads the entire Pointer Table into memory."""
+    print("--- Phase 1: Parsing Main Pointer Table ---")
+    start = POINTER_TABLE_START
+    end = start + (POINTER_TABLE_ENTRIES * POINTER_SIZE)
+    pointer_table_data = data[start:end]
+    pointers = [struct.unpack('<I', pointer_table_data[i*POINTER_SIZE:(i+1)*POINTER_SIZE])[0] for i in range(POINTER_TABLE_ENTRIES)]
+    print(f"Read {len(pointers)} physical data pointers.")
+    return pointers
 
-def find_all_markers(data, marker):
-    """Pomocnicza funkcja do znajdowania wszystkich wystąpień znacznika."""
-    positions = []
-    pos = data.find(marker, 0)
-    while pos != -1:
-        positions.append(pos)
-        pos = data.find(marker, pos + 1)
-    return positions
-
-def get_extension_from_data(decompressed_data):
-    """
-    Sprawdza pierwsze bajty rozpakowanych danych i zwraca odpowiednie rozszerzenie
-    na podstawie tabeli HEADER_TO_EXTENSION_MAP.
-    """
-    for header, extension in HEADER_TO_EXTENSION_MAP.items():
-        if decompressed_data.startswith(header):
-            return extension
-            
-    # Jeśli żaden nagłówek nie pasuje, sprawdź czy to plik tekstowy
-    try:
-        sample = decompressed_data[:128].decode('ascii')
-        if all(c.isprintable() or c.isspace() for c in sample if c != '\x00'):
-            return '.txt'
-    except (UnicodeDecodeError, AttributeError):
-        pass
-
-    # Domyślne rozszerzenie, jeśli nic nie pasuje
-    return '.path'
-
-def bruteforce_export_by_markers_skip_first():
-    """
-    Skanuje plik, znajduje bloki !CMP i PNG, pomija pierwszy,
-    a resztę rozpakowuje i identyfikuje na podstawie tabeli nagłówków.
-    """
-    print(f"--- Siłowy eksport do folderu '{OUTPUT_DIR}' (z tabelą nagłówków) ---")
+def unpack_files_with_final_logic(data, pointer_table):
+    """Main function that unpacks unique files into the correct folder structure."""
+    print("\n--- Phase 2: Parsing hierarchy and unpacking unique files ---")
     
-    # Niezawodne ścieżki
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
     except NameError:
         script_dir = os.getcwd()
-    input_path = os.path.join(script_dir, INPUT_FILE)
     output_dir_path = os.path.join(script_dir, OUTPUT_DIR)
-    os.makedirs(output_dir_path, exist_ok=True)
     
-    try:
-        with open(input_path, 'rb') as f:
-            data = f.read()
-    except Exception as e:
-        print(f"BŁĄD: Nie można otworzyć pliku wejściowego! {e}")
-        return
-        
-    # Krok 1: Znajdź i posortuj wszystkie bloki
-    print("Skanowanie pliku w poszukiwaniu znaczników !CMP i PNG...")
-    cmp_positions = find_all_markers(data, CMP_MARKER)
-    png_positions = find_all_markers(data, PNG_HEADER)
-    
-    all_chunks = []
-    for pos in cmp_positions:
-        all_chunks.append({'offset': pos, 'type': 'CMP'})
-    for pos in png_positions:
-        all_chunks.append({'offset': pos, 'type': 'PNG'})
-    all_chunks.sort(key=lambda x: x['offset'])
-    
-    if not all_chunks:
-        print("Nie znaleziono żadnych bloków danych.")
-        return
-        
-    print(f"Znaleziono łącznie {len(all_chunks)} bloków danych.")
-    print(f"Celowo pomijam pierwszy blok znaleziony na pozycji {hex(all_chunks[0]['offset'])}.")
+    # Step A: Parse Directory Table
+    directories = []
+    current_pos = DIRECTORY_TABLE_START
+    while True:
+        try:
+            name_start = current_pos + 8
+            name_end = data.find(b'\x00', name_start)
+            dir_name = data[name_start:name_end].decode('latin-1')
+            if not dir_name or ('/' not in dir_name and '\\' not in dir_name):
+                break
+            _dir_id, first_file_ptr = struct.unpack('<II', data[current_pos : current_pos + 8])
+            directories.append({'name': dir_name, 'first_file_ptr': first_file_ptr})
+            current_pos = (name_end + 1 + 3) & ~3
+        except (struct.error, IndexError): break
+    print(f"Identified {len(directories)} directory entries.")
 
-    # Krok 2: Przetwarzanie bloków, pomijając pierwszy
-    for i in range(1, len(all_chunks)):
-        chunk = all_chunks[i]
-        offset = chunk['offset']
-        chunk_type = chunk['type']
+    # Step B: Process each directory and its file list
+    saved_files = set()
+    
+    for directory in directories:
+        next_file_ptr = directory['first_file_ptr']
         
-        is_last_chunk = (i + 1) == len(all_chunks)
-        end_offset = len(data) if is_last_chunk else all_chunks[i+1]['offset']
-        
-        raw_chunk = data[offset:end_offset]
-        
-        output_data = None
-        extension = ".dat"
-        
-        print(f"\nPrzetwarzanie chunk_{i} (Typ: {chunk_type}, Offset: {hex(offset)})...")
-        
-        if chunk_type == 'CMP':
-            zlib_stream = raw_chunk[ZLIB_START_OFFSET_IN_BLOCK:]
+        while next_file_ptr != 0:
             try:
-                output_data = zlib.decompress(zlib_stream)
-                # Identyfikacja na podstawie tabeli
-                extension = get_extension_from_data(output_data)
-            except zlib.error as e:
-                print(f"  Ostrzeżenie: Błąd dekompresji. Zapisuję surowy blok. Błąd: {e}")
-                output_data = raw_chunk
-                extension = ".cmp.error"
-        
-        elif chunk_type == 'PNG':
-            output_data = raw_chunk
-            extension = ".png"
+                metadata_chunk = data[next_file_ptr : next_file_ptr + 16]
+                _next_ptr_val, _total_size, block_count = struct.unpack('<III', metadata_chunk[:12])
+                pointer_table_addr_bytes = metadata_chunk[12:16]
+                start_pointer_address = int.from_bytes(pointer_table_addr_bytes, 'little')
+
+                name_start = next_file_ptr + 16
+                name_end = data.find(b'\x00', name_start)
+                # Build the full file path by joining the directory name and file name
+                filename_only = data[name_start:name_end].decode('latin-1')
+                full_path = os.path.join(directory['name'], filename_only).replace('\\', '/')
+            except (struct.error, IndexError): break
+
+            # De-duplication
+            if not full_path or full_path.lower() in saved_files:
+                next_file_ptr = _next_ptr_val
+                continue
+
+            print(f"\n+ Processing unique file: '{full_path}'")
+            saved_files.add(full_path.lower())
             
-        if output_data:
-            output_filename = f"chunk_{i}{extension}"
-            output_filepath = os.path.join(output_dir_path, output_filename)
-            try:
-                with open(output_filepath, 'wb') as out_f:
-                    out_f.write(output_data)
-                print(f"  Sukces! Zapisano do '{output_filepath}' (Rozmiar: {len(output_data)} bajtów)")
-            except OSError as e:
-                print(f"  Błąd zapisu pliku '{output_filepath}': {e}")
-                
-    print(f"\nSukces! Zakończono eksport.")
+            start_index = (start_pointer_address - POINTER_TABLE_START) // POINTER_SIZE
+            
+            if start_index >= len(pointer_table):
+                print(f"    ERROR: Calculated start index ({start_index}) is out of range. Skipping.")
+                next_file_ptr = _next_ptr_val
+                continue
+            
+            # Take only the FIRST block from the list of duplicates
+            target_offset = pointer_table[start_index]
+            
+            next_pointer_index = start_index + 1
+            is_last = (next_pointer_index) >= len(pointer_table)
+            next_offset = len(data) if is_last else pointer_table[next_pointer_index]
+            compr_size = next_offset - target_offset
+            
+            output_data = b''
+            if compr_size > 0:
+                raw_chunk = data[target_offset : target_offset + compr_size]
+                if raw_chunk.startswith(CMP_MARKER):
+                    try:
+                        output_data = zlib.decompress(raw_chunk[ZLIB_START_OFFSET_IN_BLOCK:])
+                    except zlib.error as e: print(f"    Decompression error: {e}")
+                elif raw_chunk.startswith(PNG_HEADER):
+                    output_data = raw_chunk
+            
+            # Save file with full path
+            if output_data:
+                try:
+                    # --- IMPROVED SAVE LOGIC ---
+                    output_filepath = os.path.join(output_dir_path, full_path)
+                    # Automatically create all needed subfolders
+                    os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+                    
+                    with open(output_filepath, 'wb') as out_f:
+                        out_f.write(output_data)
+                    print(f"  Success! Saved to: '{output_filepath}'")
+                    # ---------------------------------
+                except (OSError, ValueError) as e:
+                    print(f"    Save error: {e}")
+            
+            next_file_ptr = _next_ptr_val
+            
+def main():
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+    except NameError:
+        script_dir = os.getcwd()
+    input_file_path = os.path.join(script_dir, INPUT_FILE)
+
+    if not os.path.exists(input_file_path):
+        print(f"ERROR: File '{input_file_path}' not found!")
+        return
+
+    with open(input_file_path, 'rb') as f:
+        full_data = f.read()
+    
+    pointer_table = parse_pointer_table(full_data)
+    
+    if pointer_table:
+        unpack_files_with_final_logic(full_data, pointer_table)
+        
 
 if __name__ == "__main__":
-    bruteforce_export_by_markers_skip_first()
+    main()
